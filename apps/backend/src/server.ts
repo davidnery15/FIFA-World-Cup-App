@@ -2,15 +2,18 @@ import express, { Application, Request, Response } from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import connectDB from "./config/db";
-
-const app: Application = express();
+import authRoutes from "./routes/authRoutes";
 
 dotenv.config();
+
+const app: Application = express();
 
 connectDB();
 
 app.use(cors());
 app.use(express.json());
+
+app.use("/api/auth", authRoutes);
 
 app.get("/api/health", (req: Request, res: Response) => {
   res.status(200).json({ status: "ok", message: "API World Cup is working ⚽" });
