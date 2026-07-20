@@ -3,6 +3,9 @@ import dotenv from "dotenv";
 import cors from "cors";
 import connectDB from "./config/db";
 import authRoutes from "./routes/authRoutes";
+import albumRoutes from "./routes/albumRoutes";
+import marketRoutes from "./routes/marketRoutes";
+import tradeRoutes from "./routes/tradeRoutes";
 
 dotenv.config();
 
@@ -14,6 +17,9 @@ app.use(cors());
 app.use(express.json());
 
 app.use("/api/auth", authRoutes);
+app.use("/api/album", albumRoutes);
+app.use("/api/market", marketRoutes);
+app.use("/api/trades", tradeRoutes);
 
 app.get("/api/health", (req: Request, res: Response) => {
   res.status(200).json({ status: "ok", message: "API World Cup is working ⚽" });

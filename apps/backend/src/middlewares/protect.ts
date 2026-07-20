@@ -1,12 +1,13 @@
-import { Request, Response, NextFunction } from "express";
+import { Response, NextFunction } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import User from "../models/User";
+import { AuthRequest } from "../types";
 
 interface DecodedToken extends JwtPayload {
   id: string;
 }
 
-export const protect = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const protect = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   let token: string | undefined;
 
   if (req.headers.authorization && req.headers.authorization.startsWith("Bearer ")) {
