@@ -42,10 +42,10 @@ export default function MarketPage() {
     async function loadInitialMarketData() {
       if (!isAuthenticated) return;
       try {
-        if (isMounted) {
-          const { data } = await apiClient.get("/market/matches");
-          setMatches(data.matches || []);
-        }
+        if (!isMounted) return;
+
+        const { data } = await apiClient.get("/market/matches");
+        setMatches(data.matches || []);
       } catch (error: unknown) {
         if (isMounted) {
           console.error("Failed to fetch market data:", error);
