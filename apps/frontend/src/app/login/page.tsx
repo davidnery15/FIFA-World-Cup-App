@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AxiosError } from "axios";
 import { useAuth } from "../../contexts/AuthContext";
+import { BackHomeButton } from "@/components/ui/BackHomeButton";
 
 const loginSchema = z.object({
   email: z.email({ message: "Please enter a valid email address." }).min(1, { message: "Email address is required." }),
@@ -46,6 +47,8 @@ export default function LoginPage() {
       {/* Ambient background glow effects */}
       <div className="absolute top-1/4 -left-20 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none animate-pulse" />
       <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none animate-pulse" />
+
+      <BackHomeButton />
 
       {/* Glass morphic card container */}
       <div className="relative w-full max-w-md rounded-2xl bg-slate-900/80 backdrop-blur-xl p-8 sm:p-10 border border-slate-800 shadow-2xl shadow-black/50">
