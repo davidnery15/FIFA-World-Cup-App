@@ -33,9 +33,11 @@ export const createTrade = async (req: AuthRequest<{}, {}, CreateTradeInput>, re
       return;
     }
 
-    if (!hasRequiredDuplicates(sender.duplicateStickers, offeredStickers)) {
-      res.status(400).json({ message: "You do not own all the duplicate stickers you are offering." });
-      return;
+    if (offeredStickers && offeredStickers.length > 0) {
+      if (!hasRequiredDuplicates(sender.duplicateStickers, offeredStickers)) {
+        res.status(400).json({ message: "You do not own all the duplicate stickers you are offering." });
+        return;
+      }
     }
 
     const receiver = await User.findById(receiverId);
@@ -49,10 +51,25 @@ export const createTrade = async (req: AuthRequest<{}, {}, CreateTradeInput>, re
       return;
     }
 
+    const existingPendingTrade = await Trade.findOne({
+      status: "pending",
+      $or: [
+        { senderId: sender._id, receiverId: receiver._id },
+        { senderId: receiver._id, receiverId: sender._id },
+      ],
+    });
+
+    if (existingPendingTrade) {
+      res.status(400).json({
+        message: "You already have a pending trade proposal with this collector.",
+      });
+      return;
+    }
+
     const trade = await Trade.create({
       senderId: sender._id,
       receiverId: receiver._id,
-      offeredStickers,
+      offeredStickers: offeredStickers || [],
       requestedStickers,
       status: "pending",
     });
@@ -111,7 +128,6 @@ export const respondToTrade = async (req: AuthRequest<{ id: string }, {}, Respon
       return;
     }
 
-    // Permission checks
     const isSender = trade.senderId.toString() === currentUserId;
     const isReceiver = trade.receiverId.toString() === currentUserId;
 
@@ -125,7 +141,7 @@ export const respondToTrade = async (req: AuthRequest<{ id: string }, {}, Respon
       return;
     }
 
-    // IF ACCEPTED: Execute the sticker swap securely
+    // IF ACCEPTED: Execute the sticker swap/gift securely
     if (newStatus === "accepted") {
       const sender = await User.findById(trade.senderId);
       const receiver = await User.findById(trade.receiverId);
@@ -135,9 +151,9 @@ export const respondToTrade = async (req: AuthRequest<{ id: string }, {}, Respon
         return;
       }
 
-      // Double-check availability at the exact moment of acceptance
+      const hasOffered = trade.offeredStickers && trade.offeredStickers.length > 0;
       if (
-        !hasRequiredDuplicates(sender.duplicateStickers, trade.offeredStickers) ||
+        (hasOffered && !hasRequiredDuplicates(sender.duplicateStickers, trade.offeredStickers)) ||
         !hasRequiredDuplicates(receiver.duplicateStickers, trade.requestedStickers)
       ) {
         trade.status = "rejected";
@@ -148,30 +164,30 @@ export const respondToTrade = async (req: AuthRequest<{ id: string }, {}, Respon
         return;
       }
 
-      // Remove offered stickers from sender's duplicates and add to receiver's album
-      for (const code of trade.offeredStickers) {
-        const idx = sender.duplicateStickers.indexOf(code);
-        sender.duplicateStickers.splice(idx, 1);
-        if (!receiver.collectedStickers.includes(code)) {
-          receiver.collectedStickers.push(code);
+      // Remove offered stickers from sender's duplicates and add to receiver's album (SKIP IF EMPTY)
+      if (hasOffered) {
+        for (const code of trade.offeredStickers) {
+          const idx = sender.duplicateStickers.indexOf(code);
+          if (idx > -1) sender.duplicateStickers.splice(idx, 1);
+          if (!receiver.collectedStickers.includes(code)) {
+            receiver.collectedStickers.push(code);
+          }
         }
       }
 
       // Remove requested stickers from receiver's duplicates and add to sender's album
       for (const code of trade.requestedStickers) {
         const idx = receiver.duplicateStickers.indexOf(code);
-        receiver.duplicateStickers.splice(idx, 1);
+        if (idx > -1) receiver.duplicateStickers.splice(idx, 1);
         if (!sender.collectedStickers.includes(code)) {
           sender.collectedStickers.push(code);
         }
       }
 
-      // Save updated user inventories
       await sender.save();
       await receiver.save();
     }
 
-    // Update trade status
     trade.status = newStatus;
     await trade.save();
 

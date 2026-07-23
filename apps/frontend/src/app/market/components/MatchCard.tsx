@@ -3,7 +3,8 @@
 import React, { useState } from "react";
 
 export interface MatchData {
-  userId: string;
+  _id?: string;
+  userId?: string;
   name: string;
   email: string;
   stickersWeNeed: string[];
@@ -18,18 +19,24 @@ interface MatchCardProps {
 }
 
 export const MatchCard: React.FC<MatchCardProps> = ({ match, onProposeTrade, isSubmitting }) => {
-  // Local state to select one sticker to offer and one to request for a clean 1-for-1 trade
-  const [selectedOffered, setSelectedOffered] = useState<string>(match.stickersTheyNeedFromUs[0] || "");
-  const [selectedRequested, setSelectedRequested] = useState<string>(match.stickersWeNeed[0] || "");
+  const [selectedOffered, setSelectedOffered] = useState<string>(match.stickersTheyNeedFromUs?.[0] || "");
+  const [selectedRequested, setSelectedRequested] = useState<string>(match.stickersWeNeed?.[0] || "");
 
   const handleTradeClick = () => {
+    // Only block if we haven't selected a sticker we want.
+    // We allow selectedOffered to be empty for gift requests.
     if (!selectedRequested) return;
 
-    // If it's a mutual match, send the selected offered sticker. Otherwise, send an empty array or let user know.
+    const targetId = match._id || match.userId;
+    if (!targetId) {
+      console.error("Cannot propose trade: Target user ID is missing.");
+      return;
+    }
+
     const offeredArray = selectedOffered ? [selectedOffered] : [];
     const requestedArray = [selectedRequested];
 
-    onProposeTrade(match.userId, offeredArray, requestedArray);
+    onProposeTrade(targetId, offeredArray, requestedArray);
   };
 
   return (
@@ -44,11 +51,11 @@ export const MatchCard: React.FC<MatchCardProps> = ({ match, onProposeTrade, isS
       <div className="flex items-center justify-between gap-2 mb-4">
         <div className="flex items-center gap-2.5">
           <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-white text-base shadow-inner">
-            {match.name.charAt(0).toUpperCase()}
+            {(match.name || "U").charAt(0).toUpperCase()}
           </div>
           <div>
-            <h3 className="text-base font-bold text-white tracking-tight">{match.name}</h3>
-            <span className="text-xs text-slate-400 block font-mono">{match.email}</span>
+            <h3 className="text-base font-bold text-white tracking-tight">{match.name || "Collector"}</h3>
+            <span className="text-xs text-slate-400 block font-mono">{match.email || ""}</span>
           </div>
         </div>
 
@@ -59,8 +66,8 @@ export const MatchCard: React.FC<MatchCardProps> = ({ match, onProposeTrade, isS
           </span>
         ) : (
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-xs font-semibold text-slate-400">
-            <span>🥈</span>
-            <span>One-Way Trade</span>
+            <span>🎁</span>
+            <span>Gift Request</span>
           </span>
         )}
       </div>
@@ -70,10 +77,10 @@ export const MatchCard: React.FC<MatchCardProps> = ({ match, onProposeTrade, isS
         {/* Column 1: What they have that we need */}
         <div>
           <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400 block mb-2">
-            Stickers You Need ({match.stickersWeNeed.length})
+            Stickers You Need ({match.stickersWeNeed?.length || 0})
           </span>
           <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
-            {match.stickersWeNeed.map((code) => (
+            {match.stickersWeNeed?.map((code) => (
               <button
                 key={code}
                 type="button"
@@ -93,10 +100,14 @@ export const MatchCard: React.FC<MatchCardProps> = ({ match, onProposeTrade, isS
         {/* Column 2: What we have that they need */}
         <div>
           <span className="text-[11px] font-bold uppercase tracking-wider text-teal-400 block mb-2">
-            Stickers They Want ({match.stickersTheyNeedFromUs.length})
+            Stickers They Want ({match.stickersTheyNeedFromUs?.length || 0})
           </span>
-          {match.stickersTheyNeedFromUs.length === 0 ? (
-            <p className="text-xs text-slate-500 italic mt-2">You do not own any duplicates this user is missing.</p>
+          {!match.stickersTheyNeedFromUs || match.stickersTheyNeedFromUs.length === 0 ? (
+            <div className="mt-2 p-2 rounded-lg bg-slate-950/50 border border-slate-800/80">
+              <p className="text-[10px] text-slate-400 leading-relaxed font-medium">
+                You do not own any duplicates this user is missing. You can still ask for a gift!
+              </p>
+            </div>
           ) : (
             <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
               {match.stickersTheyNeedFromUs.map((code) => (
@@ -128,7 +139,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({ match, onProposeTrade, isS
             </span>
           ) : selectedRequested ? (
             <span>
-              Requesting <strong className="text-emerald-400 font-mono">{selectedRequested}</strong>
+              Requesting <strong className="text-emerald-400 font-mono">{selectedRequested}</strong> as a gift 🎁
             </span>
           ) : (
             <span className="italic text-slate-500">Select stickers above</span>
@@ -138,11 +149,11 @@ export const MatchCard: React.FC<MatchCardProps> = ({ match, onProposeTrade, isS
         <button
           type="button"
           onClick={handleTradeClick}
-          disabled={isSubmitting || !selectedRequested || (match.isMutualMatch && !selectedOffered)}
+          disabled={isSubmitting || !selectedRequested}
           className="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-emerald-600/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95 flex items-center gap-1.5 shrink-0"
         >
-          <span>🤝</span>
-          <span>Propose Trade</span>
+          <span>{selectedOffered ? "🤝" : "🎁"}</span>
+          <span>{selectedOffered ? "Propose Trade" : "Ask for Gift"}</span>
         </button>
       </div>
     </div>

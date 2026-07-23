@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AxiosError } from "axios";
@@ -12,15 +12,12 @@ export default function TradesHubPage() {
   const { user, isAuthenticated, isLoading: authLoading, logout, refreshUserAlbum } = useAuth();
   const router = useRouter();
 
-  // Tab navigation state
   const [activeTab, setActiveTab] = useState<"incoming" | "outgoing" | "history">("incoming");
 
-  // Data states
   const [incomingTrades, setIncomingTrades] = useState<TradeItem[]>([]);
   const [outgoingTrades, setOutgoingTrades] = useState<TradeItem[]>([]);
   const [historyTrades, setHistoryTrades] = useState<TradeItem[]>([]);
 
-  // Loading & action states
   const [dataLoading, setDataLoading] = useState<boolean>(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [alertMsg, setAlertMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -43,14 +40,24 @@ export default function TradesHubPage() {
       if (!isAuthenticated) return;
       try {
         if (!isMounted) return;
-
         const { data } = await apiClient.get("/trades");
         const allTrades: TradeItem[] = data.trades || [];
 
-        // Categorize trades safely
-        const incoming = allTrades.filter((t) => t.receiver._id === user?._id && t.status === "PENDING");
-        const outgoing = allTrades.filter((t) => t.sender._id === user?._id && t.status === "PENDING");
-        const history = allTrades.filter((t) => t.status !== "PENDING");
+        const validTrades = allTrades.filter((t) => t && (t.sender || t.senderId) && (t.receiver || t.receiverId));
+
+        const incoming = validTrades.filter((t) => {
+          const rawReceiver = t.receiver || t.receiverId;
+          const receiverId = typeof rawReceiver === "object" ? rawReceiver?._id : rawReceiver;
+          return receiverId === user?._id && t.status?.toUpperCase() === "PENDING";
+        });
+
+        const outgoing = validTrades.filter((t) => {
+          const rawSender = t.sender || t.senderId;
+          const senderId = typeof rawSender === "object" ? rawSender?._id : rawSender;
+          return senderId === user?._id && t.status?.toUpperCase() === "PENDING";
+        });
+
+        const history = validTrades.filter((t) => t.status?.toUpperCase() !== "PENDING");
 
         setIncomingTrades(incoming);
         setOutgoingTrades(outgoing);
@@ -78,9 +85,21 @@ export default function TradesHubPage() {
       const { data } = await apiClient.get("/trades");
       const allTrades: TradeItem[] = data.trades || [];
 
-      const incoming = allTrades.filter((t) => t.receiver._id === user?._id && t.status === "PENDING");
-      const outgoing = allTrades.filter((t) => t.sender._id === user?._id && t.status === "PENDING");
-      const history = allTrades.filter((t) => t.status !== "PENDING");
+      const validTrades = allTrades.filter((t) => t && (t.sender || t.senderId) && (t.receiver || t.receiverId));
+
+      const incoming = validTrades.filter((t) => {
+        const rawReceiver = t.receiver || t.receiverId;
+        const receiverId = typeof rawReceiver === "object" ? rawReceiver?._id : rawReceiver;
+        return receiverId === user?._id && t.status?.toUpperCase() === "PENDING";
+      });
+
+      const outgoing = validTrades.filter((t) => {
+        const rawSender = t.sender || t.senderId;
+        const senderId = typeof rawSender === "object" ? rawSender?._id : rawSender;
+        return senderId === user?._id && t.status?.toUpperCase() === "PENDING";
+      });
+
+      const history = validTrades.filter((t) => t.status?.toUpperCase() !== "PENDING");
 
       setIncomingTrades(incoming);
       setOutgoingTrades(outgoing);
@@ -102,7 +121,7 @@ export default function TradesHubPage() {
   const handleAcceptTrade = async (tradeId: string) => {
     setActionLoading(`accept-${tradeId}`);
     try {
-      const response = await apiClient.patch(`/trades/${tradeId}/accept`);
+      const response = await apiClient.patch(`/trades/${tradeId}`, { status: "accepted" });
       await Promise.all([refreshTradesData(), refreshUserAlbum()]);
       triggerAlert("success", `${response.data.message} Your album has been updated!`);
     } catch (error: unknown) {
@@ -116,7 +135,7 @@ export default function TradesHubPage() {
   const handleRejectTrade = async (tradeId: string) => {
     setActionLoading(`reject-${tradeId}`);
     try {
-      const response = await apiClient.patch(`/trades/${tradeId}/reject`);
+      const response = await apiClient.patch(`/trades/${tradeId}`, { status: "rejected" });
       await refreshTradesData();
       triggerAlert("success", response.data.message || "Trade proposal declined.");
     } catch (error: unknown) {
@@ -130,7 +149,7 @@ export default function TradesHubPage() {
   const handleCancelTrade = async (tradeId: string) => {
     setActionLoading(`cancel-${tradeId}`);
     try {
-      const response = await apiClient.delete(`/trades/${tradeId}`);
+      const response = await apiClient.patch(`/trades/${tradeId}`);
       await refreshTradesData();
       triggerAlert("success", response.data.message || "Proposal cancelled successfully.");
     } catch (error: unknown) {
@@ -149,16 +168,13 @@ export default function TradesHubPage() {
     );
   }
 
-  // Determine which array to display based on active tab
   const displayedTrades = activeTab === "incoming" ? incomingTrades : activeTab === "outgoing" ? outgoingTrades : historyTrades;
 
   return (
     <div className="relative min-h-screen bg-slate-950 text-slate-100 pb-16 overflow-x-hidden antialiased">
-      {/* Background Ambient Lighting */}
       <div className="absolute top-10 right-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/3 left-10 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
 
-      {/* Navigation Header */}
       <header className="sticky top-0 z-50 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -181,9 +197,7 @@ export default function TradesHubPage() {
         </div>
       </header>
 
-      {/* Main Container */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 space-y-8">
-        {/* Navigation Bar */}
         <div className="flex flex-wrap items-center justify-between gap-4 p-2 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-md">
           <div className="flex items-center gap-2">
             <Link
@@ -213,7 +227,6 @@ export default function TradesHubPage() {
           </button>
         </div>
 
-        {/* Global Notifications */}
         {alertMsg && (
           <div
             className={`rounded-xl p-4 text-sm flex items-center gap-2.5 font-medium shadow-lg transition-all ${
@@ -227,7 +240,6 @@ export default function TradesHubPage() {
           </div>
         )}
 
-        {/* Tab Switcher */}
         <div className="border-b border-slate-800 flex items-center gap-8 overflow-x-auto">
           <button
             onClick={() => setActiveTab("incoming")}
@@ -267,7 +279,6 @@ export default function TradesHubPage() {
           </button>
         </div>
 
-        {/* Display Content Grid */}
         <div>
           {dataLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-pulse">

@@ -51,7 +51,7 @@ apiClient.interceptors.response.use(
     // Extract a clean error message to display in frontend toasts or UI alerts
     const customMessage = error.response?.data?.message || error.message || "An unexpected network error occurred.";
 
-    console.error("API Error:", {
+    console.warn("API Error:", {
       url: error.config?.url,
       status: error.response?.status,
       message: customMessage,
