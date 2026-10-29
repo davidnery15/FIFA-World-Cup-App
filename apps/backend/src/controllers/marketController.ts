@@ -49,7 +49,7 @@ export const getPerfectMatches = async (req: AuthRequest, res: Response): Promis
     });
   } catch (error) {
     console.error("Error in getPerfectMatches:", error);
-    res.status(500).json({ message: "Internal server error.", error });
+    res.status(500).json({ message: "Internal server error." });
   }
 };
 
@@ -78,6 +78,6 @@ export const getMarketFeed = async (req: AuthRequest, res: Response): Promise<vo
     });
   } catch (error) {
     console.error("Error in getMarketFeed:", error);
-    res.status(500).json({ message: "Internal server error.", error });
+    res.status(500).json({ message: "Internal server error." });
   }
 };

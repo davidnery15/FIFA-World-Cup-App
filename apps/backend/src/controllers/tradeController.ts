@@ -80,7 +80,7 @@ export const createTrade = async (req: AuthRequest<{}, {}, CreateTradeInput>, re
     });
   } catch (error) {
     console.error("Error in createTrade:", error);
-    res.status(500).json({ message: "Internal server error.", error });
+    res.status(500).json({ message: "Internal server error." });
   }
 };
 
@@ -104,7 +104,7 @@ export const getMyTrades = async (req: AuthRequest, res: Response): Promise<void
     });
   } catch (error) {
     console.error("Error in getMyTrades:", error);
-    res.status(500).json({ message: "Internal server error.", error });
+    res.status(500).json({ message: "Internal server error." });
   }
 };
 
@@ -116,6 +116,11 @@ export const respondToTrade = async (req: AuthRequest<{ id: string }, {}, Respon
     const { id: tradeId } = req.params;
     const { status: newStatus } = req.body;
     const currentUserId = req.user?._id.toString();
+
+    if (!/^[a-f\d]{24}$/i.test(tradeId)) {
+      res.status(400).json({ message: "Invalid trade ID." });
+      return;
+    }
 
     const trade = await Trade.findById(tradeId);
     if (!trade) {
@@ -197,6 +202,6 @@ export const respondToTrade = async (req: AuthRequest<{ id: string }, {}, Respon
     });
   } catch (error) {
     console.error("Error in respondToTrade:", error);
-    res.status(500).json({ message: "Internal server error.", error });
+    res.status(500).json({ message: "Internal server error." });
   }
 };

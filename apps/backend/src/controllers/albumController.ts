@@ -23,7 +23,7 @@ export const getMyAlbum = async (req: AuthRequest, res: Response): Promise<void>
     });
   } catch (error) {
     console.error("Error in getMyAlbum:", error);
-    res.status(500).json({ message: "Internal server error.", error });
+    res.status(500).json({ message: "Internal server error." });
   }
 };
 
@@ -58,7 +58,7 @@ export const addCollectedSticker = async (req: AuthRequest<{}, {}, StickerCodeIn
     });
   } catch (error) {
     console.error("Error in addCollectedSticker:", error);
-    res.status(500).json({ message: "Internal server error.", error });
+    res.status(500).json({ message: "Internal server error." });
   }
 };
 
@@ -93,7 +93,7 @@ export const addDuplicateSticker = async (req: AuthRequest<{}, {}, StickerCodeIn
     });
   } catch (error) {
     console.error("Error in addDuplicateSticker:", error);
-    res.status(500).json({ message: "Internal server error.", error });
+    res.status(500).json({ message: "Internal server error." });
   }
 };
 
@@ -126,6 +126,6 @@ export const removeDuplicateSticker = async (req: AuthRequest<{}, {}, StickerCod
     });
   } catch (error) {
     console.error("Error in removeDuplicateSticker:", error);
-    res.status(500).json({ message: "Internal server error.", error });
+    res.status(500).json({ message: "Internal server error." });
   }
 };

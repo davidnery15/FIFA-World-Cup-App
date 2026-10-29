@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const createTradeSchema = z.object({
-  receiverId: z.string().min(1),
+  receiverId: z.string().regex(/^[a-f\d]{24}$/i, "Invalid receiver ID."),
   offeredStickers: z.array(z.string()).min(0).default([]),
   requestedStickers: z.array(z.string()).min(1, "You must request at least one sticker."),
 });
