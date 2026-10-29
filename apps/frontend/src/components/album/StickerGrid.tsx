@@ -63,6 +63,7 @@ export const StickerGrid: React.FC<StickerGridProps> = ({
                 <button
                   onClick={() => onRemoveSticker(code)}
                   disabled={actionLoading === `remove-${code}`}
+                  aria-label={`Remove one copy of ${code}`}
                   title="Remove 1 copy"
                   className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-900/90 hover:bg-red-600 border border-red-500 text-white flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-md active:scale-90 disabled:opacity-50"
                 >
