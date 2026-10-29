@@ -34,3 +34,19 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Unit tests
+
+The frontend unit tests use Vitest, React Testing Library, and jsdom. Tests cover album components and validation, market matching and feed states, trade actions, and authentication state persistence.
+
+Run the suite once:
+
+```bash
+pnpm --filter frontend test
+```
+
+Run tests in watch mode while developing:
+
+```bash
+pnpm --filter frontend test:watch
+```
